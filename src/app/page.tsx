@@ -1,187 +1,109 @@
-﻿"use client";
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+﻿"use client"
 
-interface Message { role: "user" | "assistant"; content: string; }
-interface HotelContext { hotelName: string; location: string; amenities: string; checkIn: string; checkOut: string; notes: string; }
+import Link from "next/link"
+import { motion, useReducedMotion } from "framer-motion"
+import { BookOpen, Inbox, Ticket } from "lucide-react"
+import { Logo } from "@/components/brand/logo"
+import { Button } from "@/components/ui/button"
 
-const DEFAULTS: HotelContext = {
-  hotelName: "The Grand Meridian",
-  location: "Miami Beach, Florida",
-  amenities: "Rooftop pool, world-class spa, fitness center, three restaurants, 24/7 room service, valet parking, beach access",
-  checkIn: "3:00 PM",
-  checkOut: "11:00 AM",
-  notes: "Pet-friendly (up to 25lbs). Complimentary breakfast for suite guests.",
-};
+const features = [
+  {
+    icon: BookOpen,
+    title: "Answers from the house book",
+    body: "Breakfast, the radiator, the password on the card. The desk uses only what you wrote down.",
+  },
+  {
+    icon: Ticket,
+    title: "The rest becomes a request",
+    body: "Late checkout, towels, a dripping tap. Each one lands with a room, a note, and a status.",
+  },
+  {
+    icon: Inbox,
+    title: "You can see what guests ask",
+    body: "The questions that repeat, and which ones still needed a person.",
+  },
+]
 
-export default function Home() {
-  const [tab, setTab] = useState<"setup" | "chat">("setup");
-  const [ctx, setCtx] = useState<HotelContext>(DEFAULTS);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
-  function setCtxField(field: keyof HotelContext, value: string) {
-    setCtx(c => ({ ...c, [field]: value }));
-  }
-
-  async function send() {
-    if (!input.trim() || loading) return;
-    const userMsg = input;
-    const newMessages = [...messages, { role: "user" as const, content: userMsg }];
-    setMessages(newMessages);
-    setInput("");
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/concierge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMsg,
-          hotelContext: ctx,
-          conversationHistory: messages.map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
-      const data = await res.json();
-      setMessages([...newMessages, { role: "assistant", content: data.reply || "I apologize, I am having trouble responding right now." }]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const SUGGESTED = [
-    "What restaurants do you recommend nearby?",
-    "Can I book a spa treatment for tomorrow morning?",
-    "What time is checkout and can I get a late checkout?",
-    "I would like to order room service please.",
-    "What are the best local attractions?",
-  ];
+export default function HomePage() {
+  const reduce = useReducedMotion()
+  const rise = reduce ? {} : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.45 } }
 
   return (
-    <div className="min-h-screen bg-stone-900 text-stone-100">
-      <header className="border-b border-stone-700 px-6 py-5">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center text-white font-serif text-lg font-bold">H</div>
-            <div>
-              <h1 className="text-xl font-serif font-semibold tracking-wide">{ctx.hotelName}</h1>
-              <p className="text-xs text-stone-400">{ctx.location}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setTab("setup")} className="border-stone-600 text-stone-300 hover:bg-stone-800">Hotel Setup</Button>
-            <Button size="sm" onClick={() => setTab("chat")} className="bg-amber-600 hover:bg-amber-700">Guest Concierge</Button>
-          </div>
+    <div className="min-h-screen bg-background text-foreground" data-screen="landing">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
+        <Logo />
+        <div className="flex items-center gap-2">
+          <Link href="/w/linden-house" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline">
+            Linden House desk
+          </Link>
+          <Button href="/sign-in">Open the desk</Button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {tab === "setup" && (
-          <Card className="bg-stone-800 border-stone-700">
-            <CardHeader>
-              <CardTitle className="text-stone-100">Configure Your Hotel</CardTitle>
-              <CardDescription className="text-stone-400">Set up the concierge with your hotel details. Guests will interact with the Chat tab.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {([
-                  { key: "hotelName", label: "Hotel Name" },
-                  { key: "location", label: "Location" },
-                  { key: "checkIn", label: "Check-in Time" },
-                  { key: "checkOut", label: "Check-out Time" },
-                ] as { key: keyof HotelContext; label: string }[]).map(({ key, label }) => (
-                  <div key={key} className="space-y-1">
-                    <Label className="text-stone-300">{label}</Label>
-                    <Input
-                      value={ctx[key]}
-                      onChange={e => setCtxField(key, e.target.value)}
-                      className="bg-stone-900 border-stone-600 text-stone-100"
-                    />
-                  </div>
-                ))}
-              </div>
-              {([
-                { key: "amenities", label: "Amenities" },
-                { key: "notes", label: "Special Notes" },
-              ] as { key: keyof HotelContext; label: string }[]).map(({ key, label }) => (
-                <div key={key} className="space-y-1">
-                  <Label className="text-stone-300">{label}</Label>
-                  <Input
-                    value={ctx[key]}
-                    onChange={e => setCtxField(key, e.target.value)}
-                    className="bg-stone-900 border-stone-600 text-stone-100"
-                  />
-                </div>
-              ))}
-              <Button onClick={() => { setMessages([]); setTab("chat"); }} className="w-full bg-amber-600 hover:bg-amber-700">
-                Launch Concierge Chat
+      <main>
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-12 md:grid-cols-[1.1fr_0.9fr] md:py-20">
+          <motion.div {...rise}>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">For independent hotels and B&Bs</p>
+            <h1 className="mt-3 max-w-xl font-serif text-5xl leading-[1.05] tracking-tight md:text-6xl">
+              The front desk that has read the house book.
+            </h1>
+            <p className="mt-5 max-w-lg text-lg leading-8 text-muted-foreground">
+              Turndown answers guest questions from the notes you already keep, and passes the rest to you as a request.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button size="lg" href="/sign-in">Open the desk</Button>
+              <Button size="lg" variant="outline" href="/w/linden-house">
+                Ask the Linden House
               </Button>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </motion.div>
 
-        {tab === "chat" && (
-          <div className="flex flex-col h-[calc(100vh-180px)]">
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-              {messages.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-amber-600 rounded-full flex items-center justify-center text-white font-serif text-3xl font-bold mx-auto mb-4">H</div>
-                  <p className="text-stone-300 font-serif text-lg">Welcome to {ctx.hotelName}</p>
-                  <p className="text-stone-500 text-sm mt-1">How may I assist you today?</p>
-                  <div className="flex flex-wrap gap-2 justify-center mt-6">
-                    {SUGGESTED.map(s => (
-                      <button key={s} onClick={() => setInput(s)} className="text-xs bg-stone-800 text-amber-400 border border-stone-700 px-3 py-1.5 rounded-full hover:bg-stone-700">
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {msg.role === "assistant" && (
-                    <div className="w-7 h-7 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0 mt-1">H</div>
-                  )}
-                  <div className={`max-w-2xl rounded-2xl px-4 py-3 text-sm ${
-                    msg.role === "user"
-                      ? "bg-amber-600 text-white"
-                      : "bg-stone-800 text-stone-200 border border-stone-700"
-                  }`}>
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="w-7 h-7 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0">H</div>
-                  <div className="bg-stone-800 border border-stone-700 rounded-2xl px-4 py-3 text-sm text-stone-400">One moment...</div>
-                </div>
-              )}
-              <div ref={bottomRef} />
+          <motion.div
+            {...(reduce ? {} : { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5, delay: 0.08 } })}
+            className="rounded-3xl border border-border bg-card p-4 shadow-sm"
+            aria-hidden
+          >
+            <div className="rounded-2xl bg-[#1F4D3A] px-4 py-3 text-[#F7F3EA]">
+              <p className="font-serif text-lg">The Linden House</p>
+              <p className="text-xs text-[#E2C08D]">Front desk</p>
             </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ask your concierge anything..."
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && send()}
-                disabled={loading}
-                className="flex-1 bg-stone-800 border-stone-600 text-stone-100 placeholder:text-stone-500"
-              />
-              <Button onClick={send} disabled={loading || !input.trim()} className="bg-amber-600 hover:bg-amber-700">
-                {loading ? "..." : "Send"}
-              </Button>
+            <div className="space-y-3 px-2 py-4 text-sm">
+              <p className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-primary px-3 py-2 text-primary-foreground">
+                Is breakfast included, and can you do gluten-free?
+              </p>
+              <p className="max-w-[90%] rounded-2xl rounded-bl-md border border-border bg-background px-3 py-2">
+                Breakfast is cooked to order from 8:00 to 9:30. Tell us the night before if you need gluten-free.
+              </p>
+              <p className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-primary px-3 py-2 text-primary-foreground">
+                Could we stay until 12:30 tomorrow?
+              </p>
+              <p className="max-w-[90%] rounded-2xl rounded-bl-md border border-border bg-background px-3 py-2">
+                We can often extend to 12:30 when the room is free. I&apos;ve sent this to the front desk.
+              </p>
             </div>
-          </div>
-        )}
+          </motion.div>
+        </section>
+
+        <section className="mx-auto grid max-w-6xl gap-4 px-5 pb-20 md:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon
+            return (
+              <article key={feature.title} className="rounded-2xl border border-border bg-card p-5">
+                <Icon className="size-5 text-primary" aria-hidden />
+                <h2 className="mt-4 font-serif text-2xl">{feature.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{feature.body}</p>
+              </article>
+            )
+          })}
+        </section>
       </main>
+
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-sm text-muted-foreground">
+          <p>Turndown · Front desk software for independent inns.</p>
+          <Link href="/sign-in" className="hover:text-foreground">Sign in</Link>
+        </div>
+      </footer>
     </div>
-  );
+  )
 }
