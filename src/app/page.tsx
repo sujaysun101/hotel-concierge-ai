@@ -40,7 +40,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main>
+      <main data-screen="landing">
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-12 md:grid-cols-[1.1fr_0.9fr] md:py-20">
           <motion.div {...rise}>
             <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">For independent hotels and B&Bs</p>

@@ -11,6 +11,13 @@ async function shot(path: string, url: string, ready: string) {
   await browser.close()
 }
 
-await shot("public/portfolio-screenshot.png", `${base}/demo`, '[data-screen="desk"]')
-await shot("public/portfolio-screenshot-landing.png", `${base}/`, '[data-screen="landing"]')
-console.log("Wrote portfolio screenshots.")
+async function main() {
+  await shot("public/portfolio-screenshot.png", `${base}/demo`, '[data-screen="desk"]')
+  await shot("public/portfolio-screenshot-landing.png", `${base}/`, '[data-screen="landing"]')
+  console.log("Wrote portfolio screenshots.")
+}
+
+main().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})
